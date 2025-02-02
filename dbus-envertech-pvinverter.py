@@ -2,12 +2,12 @@
 
 # import normal packages
 import platform
+import urllib.parse
 import logging
 import sys
 import os
 import requests
 import sys
-import urllib.parse
 if sys.version_info.major == 2:
     import gobject
 else:
@@ -124,17 +124,19 @@ class DbusEnvertechService:
 
         responseStationInfo = requests.post(url, headers=headers, data=data).json()
 
-        url = 'https://www.envertecportal.com/ApiInverters/QueryTerminalReal'
+        # Second request
+        url_query_info = 'https://www.envertecportal.com/ApiInverters/QueryTerminalReal'
+        where_condition = '{"STATIONID":"' + stationId + '"}'
+        encoded_where_condition = urllib.parse.quote(where_condition)
+
         data = {
             'page': '1',
             'perPage': '1',
             'orderBy': 'GATEWAYSN',
-            'whereCondition': '{"STATIONID":"' + stationId + '"}',
+            'whereCondition': '{"STATIONID":"' + stationId + '"}'
         }
 
-        encoded_data = urllib.parse.urlencode(data)
-
-        responseQueryInfo = requests.post(url, headers=headers, data=encoded_data).json()
+        responseQueryInfo = requests.post(url_query_info, headers=headers, data=data).json()
 
         try:
             acEnergyForward = self._getDailyProduction(responseStationInfo)
@@ -192,7 +194,7 @@ class DbusEnvertechService:
         return response['Data']['Etoday']
 
     def _getAcVoltage(self, response):
-        return response['Data']['QueryResults'][0]['ACVOLTAGE']
+        return float(response['Data']['QueryResults'][0]['ACVOLTAGE'])
 
     def _getGridCurrent(self, response):
         # TODO: get grid current from modbus
