@@ -7,6 +7,7 @@ import logging
 import sys
 import os
 import requests
+from requests.exceptions import RequestException
 import sys
 if sys.version_info.major == 2:
     import gobject
@@ -122,7 +123,11 @@ class DbusEnvertechService:
             'stationId': stationId,
         }
 
-        responseStationInfo = requests.post(url, headers=headers, data=data).json()
+        try:
+            responseStationInfo = requests.post(url, headers=headers, data=data, timeout=(5, 15)).json()
+        except RequestException as e:
+            logging.critical("Envertech station info request failed", exc_info=e)
+            raise
 
         # Second request
         url_query_info = 'https://www.envertecportal.com/ApiInverters/QueryTerminalReal'
@@ -136,7 +141,11 @@ class DbusEnvertechService:
             'whereCondition': '{"STATIONID":"' + stationId + '"}'
         }
 
-        responseQueryInfo = requests.post(url_query_info, headers=headers, data=data).json()
+        try:
+            responseQueryInfo = requests.post(url_query_info, headers=headers, data=data, timeout=(5, 15)).json()
+        except RequestException as e:
+            logging.critical("Envertech inverter query request failed", exc_info=e)
+            raise
 
         try:
             acEnergyForward = self._getDailyProduction(responseStationInfo)
